@@ -107,11 +107,12 @@ class UserModel {
     // Remove _id from update data to prevent modification
     delete (updateData as any)._id;
 
-    const result = await this.collection!.findOneAndUpdate(
+    // Use type assertion to handle the MongoDB return type
+    const result = (await this.collection!.findOneAndUpdate(
       { _id: new ObjectId(id) as any },
       { $set: updateData },
       { returnDocument: "after" }
-    );
+    )) as WithId<User> | null;
 
     return result ? this.mapUser(result) : null;
   }
