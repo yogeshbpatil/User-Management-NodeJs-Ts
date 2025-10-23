@@ -104,7 +104,7 @@ class UserModel {
       updatedAt: new Date(),
     };
 
-    // Remove _id from update data to prevent modification
+    // Remove _id from update data to prevent modification test
     delete (updateData as any)._id;
 
     // Use type assertion to handle the MongoDB return type
