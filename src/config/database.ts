@@ -1,4 +1,4 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient, Db, MongoClientOptions } from "mongodb";
 import dotenv from "dotenv";
 
 // Load appropriate .env file based on environment
@@ -22,7 +22,25 @@ class Database {
     if (!MONGODB_URI) {
       throw new Error("MONGODB_URI is not defined in environment variables");
     }
-    this.client = new MongoClient(MONGODB_URI);
+
+    // Add MongoDB connection options for SSL/TLS with proper typing
+    const connectionOptions: MongoClientOptions = {
+      // SSL/TLS configuration for production
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      // Connection pool settings
+      maxPoolSize: 10,
+      minPoolSize: 5,
+      // Timeout settings
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      // Retry settings
+      retryWrites: true,
+      retryReads: true,
+      // Remove the 'w' property as it's already in the connection string
+    };
+
+    this.client = new MongoClient(MONGODB_URI, connectionOptions);
   }
 
   public static getInstance(): Database {
