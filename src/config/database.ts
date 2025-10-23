@@ -17,11 +17,11 @@ class Database {
       throw new Error("MONGODB_URI is not defined in environment variables");
     }
 
-    // Use only one TLS option, not both
+    // Simplified connection options for Render
     const connectionOptions = {
-      // Use either this OR tlsAllowInvalidCertificates, not both
-      tls: true,
-      // tlsAllowInvalidCertificates: false, // Remove this line
+      // Use ssl instead of tls for better compatibility
+      ssl: true,
+      sslValidate: false,
 
       // Connection settings
       maxPoolSize: 10,
@@ -31,6 +31,12 @@ class Database {
       retryWrites: true,
       retryReads: true,
     };
+
+    console.log("🔧 MongoDB Connection Options:", {
+      ssl: connectionOptions.ssl,
+      sslValidate: connectionOptions.sslValidate,
+      maxPoolSize: connectionOptions.maxPoolSize,
+    });
 
     this.client = new MongoClient(MONGODB_URI, connectionOptions);
   }
@@ -45,6 +51,10 @@ class Database {
   public async connect(): Promise<Db> {
     try {
       console.log("🔄 Attempting to connect to MongoDB Atlas...");
+      console.log(
+        "📡 Connection URI:",
+        MONGODB_URI.replace(/:[^:]*@/, ":****@")
+      ); // Hide password in logs
 
       await this.client.connect();
       this.db = this.client.db(DB_NAME);
