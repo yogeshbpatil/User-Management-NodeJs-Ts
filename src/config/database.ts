@@ -1,7 +1,12 @@
 import { MongoClient, Db } from "mongodb";
 import dotenv from "dotenv";
 
-dotenv.config();
+// Load appropriate .env file based on environment
+if (process.env.NODE_ENV === "production") {
+  dotenv.config({ path: ".env.production" });
+} else {
+  dotenv.config();
+}
 
 const MONGODB_URI = process.env.MONGODB_URI || "";
 const DB_NAME = "user_management";
@@ -14,6 +19,9 @@ class Database {
   private connectionPromise: Promise<Db> | null = null;
 
   private constructor() {
+    if (!MONGODB_URI) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
     this.client = new MongoClient(MONGODB_URI);
   }
 
@@ -34,7 +42,9 @@ class Database {
         await this.client.connect();
         this.db = this.client.db(DB_NAME);
         this.isConnected = true;
-        console.log("✅ Connected to MongoDB Atlas");
+        console.log(
+          `✅ Connected to MongoDB Atlas (${process.env.NODE_ENV} environment)`
+        );
         resolve(this.db);
       } catch (error) {
         console.error("❌ MongoDB connection error:", error);
