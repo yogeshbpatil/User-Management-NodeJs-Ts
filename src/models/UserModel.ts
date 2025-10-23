@@ -104,17 +104,18 @@ class UserModel {
       updatedAt: new Date(),
     };
 
-    // Remove _id from update data to prevent modification test
+    // Remove _id from update data to prevent modification
     delete (updateData as any)._id;
 
-    // Use type assertion to handle the MongoDB return type
-    const result = (await this.collection!.findOneAndUpdate(
+    // For MongoDB v4, findOneAndUpdate returns ModifyResult which has a 'value' property
+    const result = await this.collection!.findOneAndUpdate(
       { _id: new ObjectId(id) as any },
       { $set: updateData },
       { returnDocument: "after" }
-    )) as WithId<User> | null;
+    );
 
-    return result ? this.mapUser(result) : null;
+    // Access the 'value' property from ModifyResult
+    return result && result.value ? this.mapUser(result.value) : null;
   }
 
   async deleteUser(id: string): Promise<boolean> {
