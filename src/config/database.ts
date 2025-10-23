@@ -1,12 +1,7 @@
-import { MongoClient, Db, MongoClientOptions } from "mongodb";
+import { MongoClient, Db } from "mongodb";
 import dotenv from "dotenv";
 
-// Load appropriate .env file based on environment
-if (process.env.NODE_ENV === "production") {
-  dotenv.config({ path: ".env.production" });
-} else {
-  dotenv.config();
-}
+dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || "";
 const DB_NAME = "user_management";
@@ -16,28 +11,25 @@ class Database {
   private client: MongoClient;
   private db: Db | null = null;
   private isConnected: boolean = false;
-  private connectionPromise: Promise<Db> | null = null;
 
   private constructor() {
     if (!MONGODB_URI) {
       throw new Error("MONGODB_URI is not defined in environment variables");
     }
 
-    // Add MongoDB connection options for SSL/TLS with proper typing
-    const connectionOptions: MongoClientOptions = {
-      // SSL/TLS configuration for production
+    // Use only one TLS option, not both
+    const connectionOptions = {
+      // Use either this OR tlsAllowInvalidCertificates, not both
       tls: true,
-      tlsAllowInvalidCertificates: false,
-      // Connection pool settings
+      // tlsAllowInvalidCertificates: false, // Remove this line
+
+      // Connection settings
       maxPoolSize: 10,
-      minPoolSize: 5,
-      // Timeout settings
-      connectTimeoutMS: 10000,
+      connectTimeoutMS: 30000,
       socketTimeoutMS: 45000,
-      // Retry settings
+      serverSelectionTimeoutMS: 30000,
       retryWrites: true,
       retryReads: true,
-      // Remove the 'w' property as it's already in the connection string
     };
 
     this.client = new MongoClient(MONGODB_URI, connectionOptions);
@@ -51,27 +43,22 @@ class Database {
   }
 
   public async connect(): Promise<Db> {
-    if (this.connectionPromise) {
-      return this.connectionPromise;
+    try {
+      console.log("🔄 Attempting to connect to MongoDB Atlas...");
+
+      await this.client.connect();
+      this.db = this.client.db(DB_NAME);
+      this.isConnected = true;
+
+      // Test the connection
+      await this.db.command({ ping: 1 });
+      console.log("✅ Connected to MongoDB Atlas successfully");
+
+      return this.db;
+    } catch (error) {
+      console.error("❌ MongoDB connection error:", error);
+      throw error;
     }
-
-    this.connectionPromise = new Promise(async (resolve, reject) => {
-      try {
-        await this.client.connect();
-        this.db = this.client.db(DB_NAME);
-        this.isConnected = true;
-        console.log(
-          `✅ Connected to MongoDB Atlas (${process.env.NODE_ENV} environment)`
-        );
-        resolve(this.db);
-      } catch (error) {
-        console.error("❌ MongoDB connection error:", error);
-        this.connectionPromise = null;
-        reject(error);
-      }
-    });
-
-    return this.connectionPromise;
   }
 
   public async getDb(): Promise<Db> {
@@ -86,7 +73,6 @@ class Database {
       await this.client.close();
       this.isConnected = false;
       this.db = null;
-      this.connectionPromise = null;
       console.log("📦 Disconnected from MongoDB");
     }
   }
