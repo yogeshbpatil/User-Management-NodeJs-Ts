@@ -75,7 +75,14 @@ export class UserService {
     return await this.userModel.updateUser(id, userData);
   }
 
+  // ✅ ADD DELETE METHOD HERE
   async deleteUser(id: string): Promise<boolean> {
+    // Check if user exists before deleting
+    const existingUser = await this.userModel.getUserById(id);
+    if (!existingUser) {
+      throw new Error("User not found");
+    }
+
     return await this.userModel.deleteUser(id);
   }
 }

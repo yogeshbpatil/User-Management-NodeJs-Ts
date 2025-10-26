@@ -90,6 +90,34 @@ export class UserController {
       }
     }
   }
+
+  // ✅ ADD DELETE METHOD HERE
+  async deleteUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const isDeleted = await this.userService.deleteUser(id);
+
+      if (!isDeleted) {
+        sendErrorResponse(res, "Failed to delete user", 500);
+        return;
+      }
+
+      sendSuccessResponse(res, "User deleted successfully", null, 200);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+
+      if (error instanceof Error) {
+        if (error.message.includes("not found")) {
+          sendErrorResponse(res, error.message, 404);
+        } else {
+          sendErrorResponse(res, "Failed to delete user", 500, error.message);
+        }
+      } else {
+        sendErrorResponse(res, "Failed to delete user", 500);
+      }
+    }
+  }
 }
 
 // Export the class

@@ -34,4 +34,11 @@ router.put("/:id", validateUserUpdate, async (req, res) => {
   await controller.updateUser(req, res);
 });
 
+// ✅ ADD DELETE ROUTE HERE
+// DELETE /api/v1/users/:id - Delete user by ID
+router.delete("/:id", async (req, res) => {
+  const controller = getController();
+  await controller.deleteUser(req, res);
+});
+
 export default router;
