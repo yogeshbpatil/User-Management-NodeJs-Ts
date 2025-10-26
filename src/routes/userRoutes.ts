@@ -1,6 +1,9 @@
 import { Router } from "express";
 import UserController from "../controllers/userController";
-import { validateUserRegistration } from "../middleware/validation";
+import {
+  validateUserRegistration,
+  validateUserUpdate,
+} from "../middleware/validation";
 
 const router = Router();
 
@@ -23,6 +26,12 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const controller = getController();
   await controller.getUserById(req, res);
+});
+
+// PUT /api/v1/users/:id - Update user by ID
+router.put("/:id", validateUserUpdate, async (req, res) => {
+  const controller = getController();
+  await controller.updateUser(req, res);
 });
 
 export default router;

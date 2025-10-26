@@ -1,5 +1,10 @@
 import UserModel from "../models/UserModel";
-import { User, CreateUserRequest, UserListResponse } from "../types/user";
+import {
+  User,
+  CreateUserRequest,
+  UserListResponse,
+  UpdateUserRequest,
+} from "../types/user";
 
 export class UserService {
   private userModel: UserModel;
@@ -43,7 +48,30 @@ export class UserService {
     return await this.userModel.getUserById(id);
   }
 
-  async updateUser(id: string, userData: Partial<User>): Promise<User | null> {
+  async updateUser(
+    id: string,
+    userData: UpdateUserRequest
+  ): Promise<User | null> {
+    // If email is being updated, check if new email already exists
+    if (userData.emailAddress) {
+      const existingUserByEmail = await this.userModel.getUserByEmail(
+        userData.emailAddress
+      );
+      if (existingUserByEmail && existingUserByEmail._id !== id) {
+        throw new Error("User with this email already exists");
+      }
+    }
+
+    // If mobile number is being updated, check if new mobile already exists
+    if (userData.mobileNumber) {
+      const existingUserByMobile = await this.userModel.getUserByMobile(
+        userData.mobileNumber
+      );
+      if (existingUserByMobile && existingUserByMobile._id !== id) {
+        throw new Error("User with this mobile number already exists");
+      }
+    }
+
     return await this.userModel.updateUser(id, userData);
   }
 
