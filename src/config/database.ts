@@ -17,13 +17,20 @@ class Database {
       throw new Error("MONGODB_URI is not defined in environment variables");
     }
 
-    // Simplified connection options for Render
+    // Validate connection string format
+    if (
+      !MONGODB_URI.startsWith("mongodb://") &&
+      !MONGODB_URI.startsWith("mongodb+srv://")
+    ) {
+      throw new Error(
+        `Invalid MongoDB connection string: ${MONGODB_URI.substring(0, 50)}...`
+      );
+    }
+
+    // Connection options for MongoDB Atlas
     const connectionOptions = {
-      // Use ssl instead of tls for better compatibility
       ssl: true,
       sslValidate: false,
-
-      // Connection settings
       maxPoolSize: 10,
       connectTimeoutMS: 30000,
       socketTimeoutMS: 45000,
@@ -38,6 +45,8 @@ class Database {
       maxPoolSize: connectionOptions.maxPoolSize,
     });
 
+    console.log("📡 Connecting to MongoDB...");
+
     this.client = new MongoClient(MONGODB_URI, connectionOptions);
   }
 
@@ -51,10 +60,10 @@ class Database {
   public async connect(): Promise<Db> {
     try {
       console.log("🔄 Attempting to connect to MongoDB Atlas...");
-      console.log(
-        "📡 Connection URI:",
-        MONGODB_URI.replace(/:[^:]*@/, ":****@")
-      ); // Hide password in logs
+
+      // Log connection details (hide password)
+      const maskedUri = MONGODB_URI.replace(/:[^:]*@/, ":****@");
+      console.log("📡 Connection URI:", maskedUri);
 
       await this.client.connect();
       this.db = this.client.db(DB_NAME);
@@ -73,9 +82,9 @@ class Database {
 
   public async getDb(): Promise<Db> {
     if (!this.db || !this.isConnected) {
-      await this.connect();
+      return await this.connect();
     }
-    return this.db!;
+    return this.db;
   }
 
   public async disconnect(): Promise<void> {
