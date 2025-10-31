@@ -1,6 +1,52 @@
 import { Request, Response, NextFunction } from "express";
 import { CreateUserRequest, UpdateUserRequest } from "../types/user";
 
+// Helper function to validate DD/MM/YYYY date format
+const isValidDate = (dateString: string): boolean => {
+  const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+
+  if (!dateRegex.test(dateString)) {
+    return false;
+  }
+
+  // Parse the date to check if it's a valid calendar date
+  const parts = dateString.split("/");
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // Months are 0-based in JavaScript
+  const year = parseInt(parts[2], 10);
+
+  const date = new Date(year, month, day);
+
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month &&
+    date.getDate() === day
+  );
+};
+
+// Helper function to calculate age from DD/MM/YYYY
+const calculateAge = (dateString: string): number => {
+  const parts = dateString.split("/");
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parseInt(parts[2], 10);
+
+  const birthDate = new Date(year, month, day);
+  const today = new Date();
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+};
+
 export const validateUserRegistration = (
   req: Request,
   res: Response,
@@ -26,10 +72,19 @@ export const validateUserRegistration = (
     errors.push("Valid Email Address is required");
   }
 
-  // Date of Birth validation (mm/dd/yyyy format)
-  const dobRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
-  if (!userData.dateOfBirth || !dobRegex.test(userData.dateOfBirth)) {
-    errors.push("Date of Birth must be in mm/dd/yyyy format");
+  // Date of Birth validation (DD/MM/YYYY format)
+  if (!userData.dateOfBirth) {
+    errors.push("Date of Birth is required");
+  } else if (!isValidDate(userData.dateOfBirth)) {
+    errors.push(
+      "Date of Birth must be in DD/MM/YYYY format and be a valid date"
+    );
+  } else {
+    // Check if user is at least 18 years old
+    const age = calculateAge(userData.dateOfBirth);
+    if (age < 18) {
+      errors.push("User must be at least 18 years old");
+    }
   }
 
   // Address Line 1 validation
@@ -97,9 +152,16 @@ export const validateUserUpdate = (
 
   // Date of Birth validation (if provided)
   if (userData.dateOfBirth !== undefined) {
-    const dobRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
-    if (!dobRegex.test(userData.dateOfBirth)) {
-      errors.push("Date of Birth must be in mm/dd/yyyy format");
+    if (!isValidDate(userData.dateOfBirth)) {
+      errors.push(
+        "Date of Birth must be in DD/MM/YYYY format and be a valid date"
+      );
+    } else {
+      // Check if user is at least 18 years old
+      const age = calculateAge(userData.dateOfBirth);
+      if (age < 18) {
+        errors.push("User must be at least 18 years old");
+      }
     }
   }
 
